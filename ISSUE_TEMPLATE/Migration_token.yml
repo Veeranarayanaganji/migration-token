@@ -24,12 +24,15 @@ body:
     validations:
       required: true
 
-  - type: input
+  - type: dropdown
     id: target_org
     attributes:
       label: "Target Organization"
       description: "Enter the name of the target organization"
       placeholder: "e.g., sam-org2"
+      options:
+        - 'SourceOrganizationMGM'
+        - 'TargetOrganizationMGM'
     validations:
       required: true
 
@@ -41,4 +44,5 @@ body:
       placeholder: "e.g., t_repo1"
     validations:
       required: true
+      
   
