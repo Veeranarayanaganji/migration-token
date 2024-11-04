@@ -8,7 +8,7 @@ jobs:
   extract_Lock_level:
     runs-on: ubuntu-latest
     outputs:
-      lock_level: ${{ steps.extract.outputs.lock_source_repo }}
+      lock_level: ${{ steps.extract.outputs.migration_level }}
     steps:
       - name: Get Lock Level from Issue Body
         id: extract
@@ -16,10 +16,10 @@ jobs:
         with:
           script: |
             const issueBody = context.payload.issue.body;
-            const LockLevelMatch = issueBody.match(/### lock_source_repo \s*\n*(.*)/);
+            const LockLevelMatch = issueBody.match(/### migration_level \s*\n*(.*)/);
             const LockLevel = LockLevelMatch ? LockLevelMatch[1].trim() : "lock"; // default to lock
             console.log("Lock Level: ", LockLevel);
-            core.setOutput("lock_source_repo", LockLevel.toLowerCase()); // Normalize to lowercase
+            core.setOutput("migration_level", LockLevel.toLowerCase()); // Normalize to lowercase
 
   lock_unlock:
     runs-on: ubuntu-latest
