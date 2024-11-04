@@ -5,28 +5,58 @@ on:
     types: [opened, edited]
 
 jobs:
-  extract_Lock_level:
+  extract_migration_level:
     runs-on: ubuntu-latest
     outputs:
-      lock_level: ${{ steps.extract.outputs.lock_source_repo }}
+      migration_level: ${{ steps.extract.outputs.migration_level }}
     steps:
-      - name: Get Lock Level from Issue Body
+      - name: Get Migration Level from Issue Body
         id: extract
         uses: actions/github-script@v6
         with:
           script: |
             const issueBody = context.payload.issue.body;
-            const LockLevelMatch = issueBody.match(/### lock_source_repo \s*\n*(.*)/);
-            const LockLevel = LockLevelMatch ? LockLevelMatch[1].trim() : "lock"; // default to lock
-            console.log("Lock Level: ", LockLevel);
-            core.setOutput("lock_source_repo", LockLevel.toLowerCase()); // Normalize to lowercase
+            const migrationLevelMatch = issueBody.match(/### Migration Level\s*\n*(.*)/);
+            const migrationLevel = migrationLevelMatch ? migrationLevelMatch[1].trim() : "Repository"; // default to Repository
+            console.log("Migration Level: ", migrationLevel);
+            core.setOutput("migration_level", migrationLevel);
+      - name: Validate PAT tokens
+        run: |
+          if [[ -z "${{ secrets.SOURCE_TOKEN }}" ]]; then
+            echo "Source Token is missing!"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.TARGET_TOKEN }}" ]]; then
+          echo "Target Token is missing!"
+          exit 1
+          fi
+        shell: bash
 
-  lock_unlock:
+  
+  
+  #Job for repo-level migration
+  repo_level_migration:
     runs-on: ubuntu-latest
-    needs: extract_Lock_level
-    env:
-            GITHUB_TOKEN: ${{ secrets.SOURCE_TOKEN }}
+    needs: extract_migration_level
+    if: ${{ needs.extract_migration_level.outputs.migration_level == 'Repository' }}  # Check migration level output
+    permissions:
+      contents: read
+      issues: write
+
     steps:
+      - name: Set up GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install gh
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Install gh-migrate-rulesets extension
+        run: gh extension install katiem0/gh-migrate-rulesets
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+
       - name: Get Issue Body
         id: issue_body
         uses: actions/github-script@v6
@@ -47,16 +77,7 @@ jobs:
             core.setOutput("source_repo", sourceRepo);
             core.setOutput("target_org", targetOrg);
             core.setOutput("target_repo", targetRepo);
-      - name: Validate PAT tokens
-        run: |
-            if [[ -z "${{ secrets.SOURCE_TOKEN }}" ]]; then
-              echo "Source Token is missing!"
-              exit 1
-            fi
-        shell: bash
-      
-      
-      
+
       steps:
       - name: Set Organization Token
         id: set_token
